@@ -1,8 +1,144 @@
-html {
-    box-sizing: border-box;
+html{
+  overflow-y: auto;
+}
+body {
+  font-family: 'Roboto', sans-serif;
+  background: linear-gradient(to bottom, #f5f7fa, #c3cfe2);
+  color: #333;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+.main_container {
+  text-align: center;
+  padding: 30px 15px;
 }
 
-body{
-    margin: 0;
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #007bff;
+}
+
+.modal-content {
+  border-radius: 10px;
+}
+
+.modal-header {
+  background-color: #007bff;
+}
+
+.game_container {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.info-box {
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.value-display {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.binary-display {
+  color: #555;
+}
+
+.game_show {
+  height: 400px;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1.2rem;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.agentOne, .agentTwo{
+    transition: all 1.2s ease;
+    border-radius: 50%;
+}
+.modal-page {
+    display: none;
+  }
+  .modal-page.active {
+    display: block;
+  }
+  .modal-dialog {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     min-height: 100vh;
+  }
+  .modal-content {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  .modal-page {
+    display: none;
+  }
+  .modal-page.active {
+    display: block;
+  }
+
+.game_show{
+    height: 900px;
+}
+.info-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    margin-top: 5px;
+}
+
+.value-display {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #212529;
+}
+
+.binary-display {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 3px;
+}
+
+.btn-primary {
+    font-size: 1.1rem;
+    padding: 10px 20px;
 }
