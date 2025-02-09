@@ -1,7 +1,7 @@
 //Initialisation des agents et du nombreagents
 
 numberOfAgent = 0;
-const SCALE  = 33
+const SCALE  = 35
 const gameShow_div = document.querySelector(".game_show")
 let agentOnePoint, agentTwoPoint;
 
@@ -11,24 +11,32 @@ let rendezVousEnCours = true; // Variable pour gérer l'état du rendez-vous
 
 let checkingDistance = false;
 
+let framsperSecond = 10;
+
 function startVerifDistance() {
-    if (checkingDistance) return; // Évite de lancer plusieurs boucles
+    if (checkingDistance) return; // Pour éviter de lancer plusieurs intervalles
     checkingDistance = true;
-
-    function checkLoop() {
-        verifierDistance();
-
-        if (!rendezVousEnCours || agentOnePoint.calculerDistance(agentTwoPoint) < 1) {
-            console.log("Arrêt de la vérification (distance atteinte)");
+  
+    const intervalId = setInterval(() => {
+        // S'assurer que les deux agents existent
+        if (!rendezVousEnCours || !agentOnePoint || !agentTwoPoint) {
+            clearInterval(intervalId);
             checkingDistance = false;
             return;
         }
-
-        requestAnimationFrame(checkLoop); // Continue tant que le rendez-vous est en cours
-    }
-
-    requestAnimationFrame(checkLoop);
+      
+        verifierDistance();
+      
+        // Si la distance entre les agents est inférieure à 1, arrêter la vérification
+        if (agentOnePoint.calculerDistance(agentTwoPoint) < 1) {
+            console.log("Arrêt de la vérification (distance atteinte)");
+            rendezVousEnCours = false;
+            clearInterval(intervalId);
+            checkingDistance = false;
+        }
+    }, 1000); // Vérification toutes les 1000 millisecondes (1 seconde)
 }
+
 
 function verifierDistance() {
     if (agentOnePoint && agentTwoPoint) {
@@ -82,354 +90,157 @@ class Point {
         if (!/^[01]+$/.test(identifiant)) {
             throw new Error("L'identifiant doit être une notation binaire valide (par exemple : '0b101').");
         }
-
-        this.x = x; // Coordonnée x
-        this.y = y; // Coordonnée y
-        this.identifiant = identifiant; // Identifiant binaire
-        this.htmlElement = htmlElement; //Element Html rattaché
+        this.x = x;
+        this.y = y;
+        this.identifiant = identifiant;
+        this.htmlElement = htmlElement;
     }
-
-    // Méthode pour déplacer à gauche
-async allerAGauche(distance = 1, duration = 50) {
-    if(!rendezVousEnCours){
-        return;
-    }
-        const targetX = this.x - (distance);
-
-        let targetHTML = parseInt(this.htmlElement.style.left.replace("px", "")) + (distance * SCALE);
-        const totalDistance = targetX - this.x; // Distance totale à parcourir
-
-        const totalDistanceHtml = (targetHTML + parseInt(this.htmlElement.style.left.replace("px", "")))
-        const velocity = totalDistanceHtml / duration; // Vitesse constante (distance par milliseconde)
-        let temp = parseInt(this.htmlElement.style.left.replace("px", ""));
-        startVerifDistance();
-        
-        return new Promise((resolve) => {
-            let elapsedTime = 0;
-            verifierDistance();
-            const interval = setInterval(() => {
-                elapsedTime += 10;
-    
-                if (elapsedTime >= duration || !rendezVousEnCours || this.x === targetX) {
-                    verifierDistance();
-                    clearInterval(interval);
-                    this.x = targetX;
-                    this.htmlElement.style.left = targetHTML + "px";
-                    resolve(); // Résoudre la promesse une fois terminé
-                } else {
-                    this.x += totalDistance / 20; // Ajout proportionnel à la vitesse
-                    temp += velocity * 10;
-                    this.htmlElement.style.left = temp + "px";
-                    verifierDistance();
-                }
-            }, 20);
-        });
-    }
-
-    async allerAGaucheM(distance = 1, duration = 50) {
+  
+    // Déplacement vers la droite (M) avec interpolation temporelle
+    async allerADroiteM(distance = 1, duration = 500) {
         if (!rendezVousEnCours) return;
         const startTime = performance.now();
-        const targetX = this.x - distance;
-        let target = 1;
-        let targetHTML = parseInt(this.htmlElement.style.left.replace("px", "")) - (distance * SCALE);
-        const step = this.x > targetX ? -1 : 1;
-    
+        const startX = this.x;
+        const targetX = startX + distance;
+        const startLeft = parseInt(this.htmlElement.style.left.replace("px", ""));
+      
         startVerifDistance();
-    
+      
         return new Promise((resolve) => {
             const move = () => {
-                if (!rendezVousEnCours || this.x === targetX) {
-                    resolve();
-                    return;
-                }
-                this.x  += step;
-    
-                // Update the HTML element's position
-                target = parseInt(this.htmlElement.style.left.replace("px", "")) + (step * SCALE );
-                this.htmlElement.style.left = `${target}px`;
-                requestAnimationFrame(move);
+                if (!rendezVousEnCours) { resolve(); return; }
+                const elapsed = performance.now() - startTime;
+                let progress = elapsed / duration;
+                if (progress > 1) progress = 1;
+                // Calcul de la nouvelle position (coordonnée interne)
+                this.x = startX + (targetX - startX) * progress;
+                // Calcul de la nouvelle position en pixels
+                const newLeft = startLeft + (distance * SCALE) * progress;
+                this.htmlElement.style.left = `${newLeft}px`;
                 verifierDistance();
-               
+                if (progress < 1) {
+                    requestAnimationFrame(move);
+                } else {
+                    resolve();
+                }
             };
             move();
-            verifierDistance();
         });
     }
-
-    
-
-// Méthode pour déplacer à droite
-async allerADroite(distance = 1, duration = 1000) {
-    if(!rendezVousEnCours){
-        return;
-    }
-    const targetX = this.x + (distance);
-    let targetHTML = parseInt(this.htmlElement.style.left.replace("px", "")) + (distance * SCALE);
-    const totalDistance = targetX - this.x; // Distance totale à parcourir
-    const totalDistanceHtml = (targetHTML + parseInt(this.htmlElement.style.left.replace("px", "")))
-    const velocity = totalDistanceHtml / duration; // Vitesse constante (distance par milliseconde)
-    let temp = parseInt(this.htmlElement.style.left.replace("px", ""));
-    startVerifDistance();
-    return new Promise((resolve) => {
-        let elapsedTime = 0;
-        verifierDistance();
-        const interval = setInterval(() => {
-            elapsedTime += 10;
-
-            if (elapsedTime >= duration || !rendezVousEnCours || this.x === targetX) {
-                verifierDistance();
-                clearInterval(interval);
-                this.x = targetX;
-                this.htmlElement.style.left = targetHTML + "px";
-                resolve(); // Résoudre la promesse une fois terminé
-            } else {
-                this.x += totalDistance / 20; // Ajout proportionnel à la vitesse
-                temp += velocity * 10;
-                this.htmlElement.style.left = temp + "px";
-                verifierDistance();
-            }
-        }, 20);
-    });
-}
-async allerADroiteM(distance = 1, duration = 500) {
-    if (!rendezVousEnCours) return;
-    const startTime = performance.now();
-    const targetX = this.x + distance;
-    //let target = 1;
-    //let targetHTML = parseInt(this.htmlElement.style.left.replace("px", "")) + (distance * SCALE);
-    const step = this.x < targetX ? 1 : -1;
-
-    startVerifDistance();
-
-    return new Promise((resolve) => {
-        const move = () => {
-
-        //const initial_X = this.x
-        //const initialX = parseInt(this.htmlElement.style.left.replace("px", ""));
-            if (!rendezVousEnCours || this.x === targetX ) {
-                resolve();
-                return;
-            }
-
-            // Update the internal coordinate
-            this.x = this.x + step;
-
-            // Update the HTML element's position
-            let target = parseInt(this.htmlElement.style.left.replace("px", ""))  + (step * SCALE );
-            this.htmlElement.style.left = `${target}px`;
-            requestAnimationFrame(move);
-            verifierDistance();
-           
-        };
-        move();
-        verifierDistance();
-    });
-}
-
-
-// Méthode pour déplacer en haut
-async allerEnHaut(distance = 1, duration = 500) {
-    if(!rendezVousEnCours){
-        return;
-    }const startTime = performance.now();
-
-    const targetY = this.y - (distance );
-    let initial_Y = this.y
-    let targetHTML = parseInt(this.htmlElement.style.top.replace("px", "")) - (distance * SCALE);
-    const totalDistance = targetY - this.y; // Distance totale à parcourir
-    const totalDistanceHtml = (targetHTML - parseInt(this.htmlElement.style.top.replace("px", "")))
-    const velocity = totalDistanceHtml / duration; // Vitesse constante (distance par milliseconde)
-    let temp = parseInt(this.htmlElement.style.top.replace("px", ""));
-    startVerifDistance();
-    return new Promise((resolve) => {
-        let elapsedTime = 0;
-        verifierDistance();
-        const interval = setInterval(() => {
-            elapsedTime += 10;
-
-            if (elapsedTime >= duration || !rendezVousEnCours || this.y === targetY) {
-                verifierDistance();
-                clearInterval(interval);
-                this.y = targetY;
-                this.htmlElement.style.top = targetHTML + "px";
-                resolve(); // Résoudre la promesse une fois terminé
-            } else {
-                
-                this.y = this.y + totalDistance/20
-                temp += velocity * 10; // Ajout proportionnel à la vitesse
-                this.htmlElement.style.top = temp + "px";
-                verifierDistance();
-            }
-        }, 20);
-    });
-}
-async allerEnHautM(distance = 1, duration = 500) {
-    if (!rendezVousEnCours) return;
-    const startTime = performance.now();
-    const targetY = this.y - distance;
-    let target = 1;
-    let targetHTML = parseInt(this.htmlElement.style.top.replace("px", "")) - (distance * SCALE);
-    const step = this.y > targetY ? -1 : 1;
-
-    startVerifDistance();
-
-    return new Promise((resolve) => {
-        const move = (currentTime) => {
-            if (!rendezVousEnCours || this.y === targetY) {
-                resolve();
-                return;
-            }
-
-            // Update the internal coordinate
-            this.y = this.y + step;
-
-            // Update the HTML element's position
-            target = parseInt(this.htmlElement.style.top.replace("px", "")) + (step * SCALE);
-            this.htmlElement.style.top = `${target}px`;
-            requestAnimationFrame(move);
-            verifierDistance();
-           
-        };
-        move();
-        verifierDistance();
-    });
-}
-
-
-// Méthode pour déplacer en bas
-async allerEnBas(distance = 1, duration = 500) {
-    if(!rendezVousEnCours){
-        return;
-    }
-    const targetY = this.y + (distance);
-    let targetHTML = parseInt(this.htmlElement.style.top.replace("px", "")) + (distance * SCALE);
-    const totalDistance = targetY - this.y; // Distance totale à parcourir
-    const totalDistanceHtml = (targetHTML - parseInt(this.htmlElement.style.top.replace("px", "")))
-    const velocity = totalDistanceHtml / duration; // Vitesse constante (distance par milliseconde)
-    let temp = parseInt(this.htmlElement.style.top.replace("px", ""));
-    startVerifDistance();
-    return new Promise((resolve) => {
-        let elapsedTime = 0;
-        verifierDistance();
-        const interval = setInterval(() => {
-            elapsedTime += 10;
-
-            if (elapsedTime >= duration || !rendezVousEnCours || this.y === targetY) {
-                verifierDistance();
-                clearInterval(interval);
-                this.y = targetY;
-                this.htmlElement.style.top = targetHTML + "px";
-                resolve(); // Résoudre la promesse une fois terminé
-            } else {
-                this.y = this.y + totalDistance/20
-                temp += velocity * 10; // Ajout proportionnel à la vitesse
-                this.htmlElement.style.top = temp + "px";
-                verifierDistance();
-            }
-        }, 20);
-    });
-}
-
-async allerEnBasM(distance = 1, duration = 500) {
-    if (!rendezVousEnCours) {
-        return;
-    }
-
-    const startTime = performance.now();
-    const targetY = this.y + distance;
-    let target = 1;
-     
-    let targetHTML = parseInt(this.htmlElement.style.top.replace("px", "")) + (distance * SCALE);
-    const step = this.y < targetY ? 1 : -1; // Move in the correct direction
-
-    startVerifDistance();
-
-    return new Promise((resolve) => {
-        const initial_Y = this.y
-        const initialY = parseInt(this.htmlElement.style.top.replace("px", ""));
-        const move = (currentTime) => {
-            if (!rendezVousEnCours || this.y === targetY) {
-                resolve();
-                return;
-            }
-
-            // Update the internal coordinate
-            this.y = this.y + step;
-
-            // Update the HTML element's position
-            target = parseInt(this.htmlElement.style.top.replace("px", "")) + (step * SCALE);
-            this.htmlElement.style.top = `${target}px`;
-            requestAnimationFrame(move);
-            verifierDistance();
-           
-        };
-        move();
-        verifierDistance();
-    });
-}
-
-
-// Méthode pour rester sur place
-async reste(duration = 500) {
-    if(!rendezVousEnCours){
-        return;
-    }
-    startVerifDistance();
-    verifierDistance();
-    return new Promise((resolve) => {
-        const elapsedTime = { time: 0 }; // Crée un objet pour suivre le temps écoulé
-        const interval = setInterval(() => {
-            elapsedTime.time += 10;
-            verifierDistance();
-            verifierDistance();
-            verifierDistance();
-            verifierDistance(); 
-            verifierDistance();   
-            if (elapsedTime.time >= duration || !rendezVousEnCours) {
-                verifierDistance();
-                clearInterval(interval);
-                resolve(); // Résout la promesse une fois terminé
-            }else {
-                verifierDistance();
-            }
-        }, 20);
-    });
-
-}
-async resteM(distance=1, duration = 500) {
-    if (!rendezVousEnCours) return;
-    let step = 1
-    startVerifDistance();
-
-    return new Promise((resolve) => {
+  
+    // Déplacement vers la gauche (M)
+    async allerAGaucheM(distance = 1, duration = 500) {
+        if (!rendezVousEnCours) return;
         const startTime = performance.now();
+        const startX = this.x;
+        const targetX = startX - distance;
+        const startLeft = parseInt(this.htmlElement.style.left.replace("px", ""));
+      
+        startVerifDistance();
+      
+        return new Promise((resolve) => {
+            const move = () => {
+                if (!rendezVousEnCours) { resolve(); return; }
+                const elapsed = performance.now() - startTime;
+                let progress = elapsed / duration;
+                if (progress > 1) progress = 1;
+                this.x = startX + (targetX - startX) * progress;
+                const newLeft = startLeft - (distance * SCALE) * progress;
+                this.htmlElement.style.left = `${newLeft}px`;
+                verifierDistance();
+                if (progress < 1) {
+                    requestAnimationFrame(move);
+                } else {
+                    resolve();
+                }
+            };
+            move();
+        });
+    }
+  
+    // Déplacement vers le haut (M)
+    async allerEnHautM(distance = 1, duration = 500) {
+        if (!rendezVousEnCours) return;
+        const startTime = performance.now();
+        const startY = this.y;
+        const targetY = startY - distance;
+        const startTop = parseInt(this.htmlElement.style.top.replace("px", ""));
+      
+        startVerifDistance();
+      
+        return new Promise((resolve) => {
+            const move = () => {
+                if (!rendezVousEnCours) { resolve(); return; }
+                const elapsed = performance.now() - startTime;
+                let progress = elapsed / duration;
+                if (progress > 1) progress = 1;
+                this.y = startY + (targetY - startY) * progress;
+                const newTop = startTop - (distance * SCALE) * progress;
+                this.htmlElement.style.top = `${newTop}px`;
+                verifierDistance();
+                if (progress < 1) {
+                    requestAnimationFrame(move);
+                } else {
+                    resolve();
+                }
+            };
+            move();
+        });
+    }
+  
+    // Déplacement vers le bas (M)
+    async allerEnBasM(distance = 1, duration = 500) {
+        if (!rendezVousEnCours) return;
+        const startTime = performance.now();
+        const startY = this.y;
+        const targetY = startY + distance;
+        const startTop = parseInt(this.htmlElement.style.top.replace("px", ""));
+      
+        startVerifDistance();
+      
+        return new Promise((resolve) => {
+            const move = () => {
+                if (!rendezVousEnCours) { resolve(); return; }
+                const elapsed = performance.now() - startTime;
+                let progress = elapsed / duration;
+                if (progress > 1) progress = 1;
+                this.y = startY + (targetY - startY) * progress;
+                const newTop = startTop + (distance * SCALE) * progress;
+                this.htmlElement.style.top = `${newTop}px`;
+                verifierDistance();
+                if (progress < 1) {
+                    requestAnimationFrame(move);
+                } else {
+                    resolve();
+                }
+            };
+            move();
+        });
+    }
+    /**
+     * La méthode resteM crée une copie (clone) du point qui appelle cette fonction
+     * et fait réaliser à ce clone un mouvement en spirale.
+     * Le point original reste inchangé.
+     * @param {number} distanceMax - La distance maximale (en nombre de "pas") pour la spirale.
+     */
+    async resteM(distanceMax = 5) {
+        if (!rendezVousEnCours) return;
+        // Clone l'élément HTML associé au point
+        const cloneElement = this.htmlElement.cloneNode(true);
+        // Positionne le clone exactement à la même position que l'original
+        cloneElement.style.left = this.htmlElement.style.left;
+        cloneElement.style.top = this.htmlElement.style.top;
 
-        const wait = (currentTime) => {
-            if (!rendezVousEnCours || step === distance) {
-                resolve();
-                return;
-            }
+        // Crée une nouvelle instance de Point pour le clone, avec les mêmes propriétés
+        const clonePoint = new Point(this.x, this.y, this.identifiant, cloneElement);
 
-            const elapsedTime = currentTime - startTime;
+        // Lance le mouvement en spirale sur le clone
+        // La fonction "spirale" est supposée être définie ailleurs et prendre en paramètres un point et une distance maximale
+        await spirale(clonePoint, distanceMax);
 
-            verifierDistance(); // Check distance at each frame
-            if (elapsedTime >= duration) {
-                resolve(); // Finish after the duration
-            } else {
-                requestAnimationFrame(wait);
-                verifierDistance(); 
-            }
-            step += 1;
-            requestAnimationFrame(wait);
-            verifierDistance()
-        };
-
-        wait();
-        verifierDistance(); 
-    });
-}
-
-
+        // Optionnel : après le mouvement, on peut retirer le clone du DOM
+        // cloneElement.remove();
+    }
     // Afficher les informations du point
     afficherInfo() {
         console.log(`Point [x=${this.x}, y=${this.y}, identifiant=${this.identifiant}]`);
@@ -457,7 +268,11 @@ async resteM(distance=1, duration = 500) {
         console.log(`Point [x=${this.x}, y=${this.y}, identifiant=${this.identifiant}]`);
         console.log('\n')
     }
+
+    // Autres méthodes (reste, spirale, etc.) restent inchangées
+    // ...
 }
+
 
 
 
@@ -524,7 +339,7 @@ async function spiraleInv(point, distanceMax) {
 }
 
 async function resteSurPlace(point, distanceMax) {
-    if(!rendezVousEnCours){
+    if (!rendezVousEnCours) {
         return;
     }
     if (!(point instanceof Point)) {
@@ -534,23 +349,7 @@ async function resteSurPlace(point, distanceMax) {
         throw new Error("La distance maximale doit être un entier positif.");
     }
 
-    for (let distance = 1; distance <= distanceMax;) {
-        // Simuler une pause pour le mouvement vers la droite
-        await point.resteM();
-
-        // Simuler une pause pour le mouvement vers le bas
-        await point.resteM();
-
-        distance++; // Augmenter la distance après deux mouvements
-
-        // Simuler une pause pour le mouvement vers la gauche
-        await point.resteM();
-
-        // Simuler une pause pour le mouvement vers le haut
-        await point.resteM();
-
-        distance++; // Augmenter à nouveau après deux autres mouvements
-    }
+    await point.resteM(distanceMax);
 }
 
 async function rendezVous(identifiant, point) {
