@@ -1,7 +1,7 @@
 //Initialisation des agents et du nombreagents
 
 numberOfAgent = 0;
-const SCALE  = 35
+const SCALE  = 20
 const gameShow_div = document.querySelector(".game_show")
 let agentOnePoint, agentTwoPoint;
 
@@ -37,19 +37,28 @@ function startVerifDistance() {
     }, 1000); // Vérification toutes les 1000 millisecondes (1 seconde)
 }
 
+function getElementCenter(element) {
+    const rect = element.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
+  }
 
-function verifierDistance() {
+
+  function verifierDistance() {
     if (agentOnePoint && agentTwoPoint) {
-        const distance = agentOnePoint.calculerDistance(agentTwoPoint);
-        const distance2 = agentTwoPoint.calculerDistance(agentOnePoint);
-        if ((distance <= 1 || distance2 <= 1) && rendezVousEnCours) {
-            console.log("Distance inférieure à 1. Arrêt du rendez-vous.");
-            rendezVousEnCours = false;
-            let distanceModal = new bootstrap.Modal(document.getElementById('distanceModal'));
-            distanceModal.show();
-        }
+      const distanceVisuelle = calculerDistanceVisuelle(agentOnePoint, agentTwoPoint);
+      const distance = agentOnePoint.calculerDistance(agentTwoPoint)
+      // Vous pouvez ajuster ce seuil en fonction de la taille de vos images
+      if (distance <= 24 && distanceVisuelle <= 24 && rendezVousEnCours) {
+        console.log("Les agents se croisent visuellement. Arrêt du rendez-vous.");
+        rendezVousEnCours = false;
+        let distanceModal = new bootstrap.Modal(document.getElementById('distanceModal'));
+        distanceModal.show();
+      }
     }
-}
+  }
 
 function convertirEnNotationBinaire(nombre) {
     if (!Number.isInteger(nombre) || nombre < 0) {
@@ -84,6 +93,14 @@ function transformerBinaire(notationBinaire) {
     // Retourner la notation finale avec le préfixe "0b"
     return `${resultat}`;
 }
+function calculerDistanceVisuelle(point1, point2) {
+    const center1 = getElementCenter(point1.htmlElement);
+    const center2 = getElementCenter(point2.htmlElement);
+    const dx = center1.x - center2.x;
+    const dy = center1.y - center2.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  
 
 class Point {
     constructor(x, y, identifiant, htmlElement) {
@@ -113,7 +130,7 @@ class Point {
                 let progress = elapsed / duration;
                 if (progress > 1) progress = 1;
                 // Calcul de la nouvelle position (coordonnée interne)
-                this.x = startX + (targetX - startX) * progress;
+                this.x = startX + (distance * SCALE) * progress;
                 // Calcul de la nouvelle position en pixels
                 const newLeft = startLeft + (distance * SCALE) * progress;
                 this.htmlElement.style.left = `${newLeft}px`;
@@ -144,7 +161,7 @@ class Point {
                 const elapsed = performance.now() - startTime;
                 let progress = elapsed / duration;
                 if (progress > 1) progress = 1;
-                this.x = startX + (targetX - startX) * progress;
+                this.x = startX - (distance * SCALE) * progress;
                 const newLeft = startLeft - (distance * SCALE) * progress;
                 this.htmlElement.style.left = `${newLeft}px`;
                 verifierDistance();
@@ -174,7 +191,7 @@ class Point {
                 const elapsed = performance.now() - startTime;
                 let progress = elapsed / duration;
                 if (progress > 1) progress = 1;
-                this.y = startY + (targetY - startY) * progress;
+                this.y = startY - (distance * SCALE) * progress;
                 const newTop = startTop - (distance * SCALE) * progress;
                 this.htmlElement.style.top = `${newTop}px`;
                 verifierDistance();
@@ -204,7 +221,7 @@ class Point {
                 const elapsed = performance.now() - startTime;
                 let progress = elapsed / duration;
                 if (progress > 1) progress = 1;
-                this.y = startY + (targetY - startY) * progress;
+                this.y = startY + (distance * SCALE) * progress;;
                 const newTop = startTop + (distance * SCALE) * progress;
                 this.htmlElement.style.top = `${newTop}px`;
                 verifierDistance();
@@ -241,18 +258,20 @@ class Point {
         // Optionnel : après le mouvement, on peut retirer le clone du DOM
         // cloneElement.remove();
     }
+    
     // Afficher les informations du point
     afficherInfo() {
         console.log(`Point [x=${this.x}, y=${this.y}, identifiant=${this.identifiant}]`);
     }
+    
     // Méthode pour calculer la distance entre ce point et un autre point
     calculerDistance(autrePoint) {
         if (!(autrePoint instanceof Point)) {
             throw new Error("L'autre point doit être une instance de la classe Point.");
         }
 
-        const dx = this.x - (autrePoint.x);
-        const dy = this.y - (autrePoint.y);
+        const dx = (this.x - autrePoint.x);
+        const dy = (this.y - autrePoint.y);
         return Math.sqrt(dx * dx + dy * dy);
     }
     calculerDistanceInit(autrePoint) {
@@ -260,8 +279,8 @@ class Point {
             throw new Error("L'autre point doit être une instance de la classe Point.");
         }
 
-        const dx = this.x - (autrePoint.x);
-        const dy = this.y - (autrePoint.y);
+        const dx = (this.x - autrePoint.x);
+        const dy = (this.y - autrePoint.y);
         return Math.sqrt(dx * dx + dy * dy);
     }
     afficherInfo() {
@@ -532,8 +551,12 @@ function afficherAgent(label, x, y, agentClass) {
         agentOne.style.borderRadius = '50%';
         agentOne.style.display = 'flex';
         labelOne = transformerBinaire(convertirEnNotationBinaire(label));
-        agentOnePoint = new Point(parseInt(x), parseInt(y), `${labelOne}`, agentOne)
         container.appendChild(agentOne);
+        const rect = agentOne.getBoundingClientRect();
+        x = x + centerX + (rect.width / 2)
+        y = y + centerY +(rect.height / 2)
+        agentOnePoint = new Point(parseInt(x), parseInt(y), `${labelOne}`, agentOne);
+        console.log(agentOne.getBoundingClientRect())
         numberOfAgent++
         return
     }
@@ -543,14 +566,18 @@ function afficherAgent(label, x, y, agentClass) {
         agentTwo.style.width = "50px"
         agentTwo.style.height = "50px"
         agentTwo.style.position = "absolute"
-        agentTwo.style.left = `${x + centerX + SCALE}px`;
-        agentTwo.style.top = `${y + centerY + SCALE}px`;
+        agentTwo.style.left = `${x + centerX + 33}px`;
+        agentTwo.style.top = `${y + centerY + 33}px`;
         agentTwo.style.backgroundColor = agentClass === 'agent1' ? 'blue' : 'green';
         agentTwo.style.borderRadius = '50%';
         agentTwo.style.display = 'flex';
         labelTwo = transformerBinaire(convertirEnNotationBinaire(label));
-        agentTwoPoint = new Point(parseInt(x), parseInt(y), `${labelTwo}`, agentTwo)
         container.appendChild(agentTwo);
+        const rect = agentTwo.getBoundingClientRect();
+        x = x + centerX + 33 +(rect.width / 2)
+        y = y + centerY + 33 + (rect.height / 2)
+        agentTwoPoint = new Point(parseInt(x), parseInt(y), `${labelTwo}`, agentTwo)
+        console.log(agentTwo.getBoundingClientRect())
         numberOfAgent++
         return
     }
