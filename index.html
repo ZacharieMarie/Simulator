@@ -25,22 +25,32 @@
         </div>
     </div>
     <!-- Modal d'alerte -->
-<div class="modal fade" id="distanceModal" tabindex="-1" aria-labelledby="distanceModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title" id="distanceModalLabel">Alerte de Distance</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal fade" id="distanceModal" tabindex="-1" aria-labelledby="distanceModalLabel" aria-hidden="true">
+        <!-- On conserve .modal-dialog pour la taille par défaut de Bootstrap -->
+        <div class="modal-dialog">
+          <!-- On peut centrer verticalement la modal en ajoutant .modal-dialog-centered si désiré :
+               <div class="modal-dialog modal-dialog-centered"> -->
+          <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success text-white border-0">
+              <h5 class="modal-title d-flex align-items-center gap-2" id="distanceModalLabel">
+                Hourra <span style="font-size:1.25em">🎉</span>
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+              <p class="fs-3 mb-3">
+                🥳 L'approche des agents est atteinte ! 🥳
+              </p>
+            </div>
+            <div class="modal-footer border-0 d-flex justify-content-center">
+              <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">
+                OK
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="modal-body">
-          La distance entre les agents est inférieure à 1. Le rendez-vous est arrêté.
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
-        </div>
-      </div>
-    </div>
-  </div>
+      </div>      
+      
     <!-- Modal -->
     <div class="modal" tabindex="-1" id="twoPageModal" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog">

@@ -556,7 +556,6 @@ function afficherAgent(label, x, y, agentClass) {
         x = x + centerX + (rect.width / 2)
         y = y + centerY +(rect.height / 2)
         agentOnePoint = new Point(parseInt(x), parseInt(y), `${labelOne}`, agentOne);
-        console.log(agentOne.getBoundingClientRect())
         numberOfAgent++
         return
     }
@@ -577,7 +576,6 @@ function afficherAgent(label, x, y, agentClass) {
         x = x + centerX + 33 +(rect.width / 2)
         y = y + centerY + 33 + (rect.height / 2)
         agentTwoPoint = new Point(parseInt(x), parseInt(y), `${labelTwo}`, agentTwo)
-        console.log(agentTwo.getBoundingClientRect())
         numberOfAgent++
         return
     }
